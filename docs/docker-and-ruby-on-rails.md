@@ -146,7 +146,7 @@ We open up the port `9200` on the local machine and the Docker container.
 
 Again we use the `env_file` which will be removed at some point.
 
-#### kibana
+#### Kibana
 Kibana is a way to monitor Elasticsearch. I thought this would be interesting to monitor what was going on.
 
 We define a service `kibana` and use the image from `docker.elastic.co/kibana/kibana`
