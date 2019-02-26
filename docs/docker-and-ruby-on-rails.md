@@ -250,7 +250,7 @@ We use `RUN tar -xvf gdal-1.11.5.tar.gz` to extract the source code into this di
 We have the following block:
 ```
 RUN cd gdal-1.11.5 \
-    && . configure --prefix=/usr \
+    && ./configure --prefix=/usr \
     && make \
     && make install
 ```
