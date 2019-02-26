@@ -229,4 +229,34 @@ EXPOSE 3000
 CMD ["rails", "server", "-b", "0.0.0.0"]
 ```
 
-TODO: Add details.
+The first instruction is `FROM ruby:2.3`, the instruction is not case-sensitive, but conventionally capitals have been used.
+
+This specifies the base image to use for this container, which is `ruby` version `2.3`.
+
+The next instruction is `MAINTAINER` which specifies my UNEP-WCMC email contact address.
+
+Next we use the `RUN` instruction, which is used many times throughout this `Dockerfile`.
+
+First we install `build-essential`, `curl` and `git` followed by `software-properties-common`.
+
+We need to install dependencies which will be required by the rest of the `Dockerfile`.
+
+Then we use the `WORKDIR` instruction to specify a folder which we can work inside for building some dependencies.
+
+We use `/gdal` as the work directory and we `RUN wget` to download the gdal source code at the exact version we require which is `1.11.5`.
+
+We use `RUN tar -xvf gdal-1.11.5.tar.gz` to extract the source code into this directory, which will appear in the subdirectory mentioned in the next line.
+
+We have the following block:
+```
+RUN cd gdal-1.11.5 \
+    && . configure --prefix=/usr \
+    && make \
+    && make install
+```
+
+This will configure the source code for gdal and point the new installation into the `/usr` path in the container. We then `make` and `make install` which will build and install gdal for us.
+
+Next we install PostgreSQL.
+
+TODO: Add more details.
