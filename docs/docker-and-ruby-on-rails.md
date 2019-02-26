@@ -1,5 +1,7 @@
 # Docker and Ruby on Rails
 
+Let us take a look at the Dockerisation of ProtectedPlanet as an example.
+
 When using Docker typically we will have a `docker-compose.yml` file which will define our application using a set of containers.
 
 ## Docker Compose
@@ -83,7 +85,7 @@ volumes:
 
 First we define the Docker Compose version, which is set to version 3. The reason for this is that the different versions of Docker can have different new features or potentially removed features. So we need to define the version which we are going to use.
 
-### Services
+### Docker Compose services
 Next we define the `services`.
 
 #### The Rails application
@@ -134,3 +136,97 @@ We use `links` to link the `db` and `redis` containers to this `sidekiq` contain
 The `command` of `bundle exec sidekiq` is used to load up sidekiq inside the container.
 
 Finally we again have `env_file` which will be removed once we have switched to using Rails encrypted secrets.
+
+#### Elasticsearch
+For Elasticsearch we define the service `elasticsearch` and use the image `docker.elastic.co/elasticsearch/elasticsearch` and we specify the version with the colon followed by the version.
+
+Next we set some environment variables which are from the Elasticsearch docs as well as the `ulimits` which are beyond the scope of this cheatsheet.
+
+We open up the port `9200` on the local machine and the Docker container.
+
+Again we use the `env_file` which will be removed at some point.
+
+#### kibana
+Kibana is a way to monitor Elasticsearch. I thought this would be interesting to monitor what was going on.
+
+We define a service `kibana` and use the image from `docker.elastic.co/kibana/kibana`
+and again we specify the version using the colon followed by the version number.
+
+Finally we have the `ports` which are `5601` on both the host machine and the Docker container.
+
+
+### Docker Compose volumes
+Finally at the end of the `docker-compose.yml` we have the three Docker volumes which we make persistent. This means that the data will survive the Docker containers being destroyed or updated.
+
+Here we have the following volumes: `protectedplanet_pg_data`, `protectedplanet_redis_data` and `protectedplanet_import_data`.
+
+
+## The Dockerfile
+Let us now take a look at the Dockerfile for this project, with a detailed overview.
+
+```
+FROM ruby:2.3
+MAINTAINER andrew.potter@unep-wcmc.org
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git
+
+RUN apt-get install software-properties-common -y
+
+WORKDIR /gdal
+RUN wget http://download.osgeo.org/gdal/1.11.5/gdal-1.11.5.tar.gz
+RUN tar -xvf gdal-1.11.5.tar.gz
+RUN cd gdal-1.11.5 \
+    && ./configure --prefix=/usr \
+    && make \
+    && make install
+
+WORKDIR /postgres
+RUN wget https://ftp.postgresql.org/pub/source/v11.1/postgresql-11.1.tar.gz
+RUN tar -xvf postgresql-11.1.tar.gz
+RUN cd postgresql-11.1 \
+    && ./configure --prefix=/usr \
+    && make \
+    && make install
+
+WORKDIR /node
+RUN wget http://nodejs.org/dist/v10.8.0/node-v10.8.0.tar.gz
+RUN tar -xvf node-v10.8.0.tar.gz
+RUN ls node-v10.8.0
+RUN cd node-v10.8.0 \
+    && ./configure --prefix=/usr \
+    && make install \
+    && wget https://www.npmjs.org/install.sh | sh
+
+RUN whereis npm
+RUN npm install bower -g
+
+WORKDIR /geos
+RUN wget https://download.osgeo.org/geos/geos-3.7.0.tar.bz2
+RUN tar -xvf geos-3.7.0.tar.bz2
+RUN ls geos-3.7.0
+RUN cd geos-3.7.0 \
+    && ./configure --prefix=/usr \
+    && make install
+
+WORKDIR /ProtectedPlanet
+ADD Gemfile /ProtectedPlanet/Gemfile
+ADD Gemfile.lock /ProtectedPlanet/Gemfile.lock
+RUN gem install rgeo --version '=0.4.0' -- --with-geos-dir=/usr/lib
+RUN bundle install
+
+ARG USER=node
+ARG UID=1000
+ARG HOME=/home/$USER
+RUN adduser --uid $UID --shell /bin/bash --home $HOME $USER
+
+COPY . /ProtectedPlanet
+
+EXPOSE 3000
+
+CMD ["rails", "server", "-b", "0.0.0.0"]
+```
+
+TODO: Add details.
